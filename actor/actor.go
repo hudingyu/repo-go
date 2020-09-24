@@ -56,10 +56,10 @@ func (actor *Actor) Do(task promise.TaskFunc) *promise.Promise {
 			})
 	}
 
-	// 将请求包装成请求，加入到执行队列，同时立即返回
+	// 将任务包装成请求，加入到执行队列，同时立即返回
 	request := &Request{task: task, result: make(chan *promise.Promise)}
 	actor.queue <- request
-
+	// 返回一个promise 作为future对象，方便处理请求结果
 	return promise.NewPromise(
 		func() (interface{}, error) {
 			p := <-request.result

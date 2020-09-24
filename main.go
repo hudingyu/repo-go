@@ -70,16 +70,14 @@ func runActorDemo() {
 	actor := actor.NewActor(10)
 	defer actor.Close()
 
-	i := 0
-	workFunc := func() (interface{}, error) {
+	task := func() (interface{}, error) {
 		time.Sleep(1 * time.Second)
-		i++
-		return i, nil
+		return 10, nil
 	}
 
-	value, _ := actor.Do(workFunc).ThenSuccess(
+	value, _ := actor.Do(task).ThenSuccess(
 		func(v interface{}) (interface{}, error) {
-			return v.(int), nil
+			return v.(int) + 1, nil
 		},
 	).Done()
 
