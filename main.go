@@ -33,6 +33,14 @@ func runPromiseDemo() {
 			return err
 		})
 
+	promiseAll1 := promise.All(promise1, promise2)
+	value1, err1 := promiseAll1.Done()
+	if err1 != nil {
+		fmt.Printf("err1: %v\n", err1)
+	} else {
+		fmt.Printf("value1: %+v\n", value1)
+	}
+
 	promise3 := promise.NewPromise(
 		func() (interface{}, error) {
 			ch := make(chan int)
@@ -49,18 +57,15 @@ func runPromiseDemo() {
 		},
 	)
 
-	promiseAll1 := promise.All(promise1, promise2)
-	value1, err := promiseAll1.Done()
-	if err != nil {
-		fmt.Printf("err1: %v\n", err)
-	} else {
-		fmt.Printf("value1: %+v\n", value1)
-	}
+	promise4 := promise.NewPromise(func() (interface{}, error) {
+		time.Sleep(time.Second)
+		return 1, nil
+	})
 
-	promiseAll2 := promise.All(promise1, promise3)
-	value2, err := promiseAll2.Done()
-	if err != nil {
-		fmt.Printf("err2: %v\n", err)
+	promiseAll2 := promise.All(promise3, promise4)
+	value2, err2 := promiseAll2.Done()
+	if err2 != nil {
+		fmt.Printf("err2: %v\n", err2)
 	} else {
 		fmt.Printf("value2: %+v\n", value2)
 	}

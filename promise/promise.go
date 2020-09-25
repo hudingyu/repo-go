@@ -1,5 +1,9 @@
 package promise
 
+import (
+	"sync/atomic"
+)
+
 type State string
 
 const (
@@ -100,27 +104,47 @@ func (p *Promise) Catch(rejectFunc OnRejected) *Promise {
 func All(promises ...*Promise) *Promise {
 	newPromise := &Promise{
 		currentState: PENDING,
-		done: make(chan struct{}),
+		done:         make(chan struct{}),
 	}
 
 	go func() {
 		defer close(newPromise.done)
 
-		var count = 0
+		errChan := make(chan error)
+		valueChan := make(chan interface{})
+
 		values := make([]interface{}, len(promises))
+		count := atomic.Value{}
+		count.Store(0)
+
 		for index, promise := range promises {
-			v, err := promise.Done()
-			// 一旦某个promise出错，立即返回REJECTED
-			if err != nil {
+			go func(index int, promise *Promise) {
+				v, err := promise.Done()
+				// 某个promise出错
+				if err != nil {
+					errChan <- err
+				}
+				values[index] = v
+				count.Store(count.Load().(int) + 1)
+				// 所有promise都成功
+				if count.Load().(int) == len(promises) {
+					valueChan <- values
+				}
+			}(index, promise)
+		}
+
+		for {
+			select {
+			//	一旦某个promise出错，立即返回REJECTED
+			case err := <-errChan:
 				newPromise.err = err
 				newPromise.currentState = REJECTED
 				return
-			}
-			values[index] = v
-			count++
-			if count == len(promises) {
-				newPromise.value = values
+			// 所有promise都成功，则返回RESOLVED
+			case value := <-valueChan:
+				newPromise.value = value
 				newPromise.currentState = RESOLVED
+				return
 			}
 		}
 	}()
