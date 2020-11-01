@@ -114,8 +114,7 @@ func All(promises ...*Promise) *Promise {
 		valueChan := make(chan interface{})
 
 		values := make([]interface{}, len(promises))
-		count := atomic.Value{}
-		count.Store(0)
+		var count int32 = 0
 
 		for index, promise := range promises {
 			go func(index int, promise *Promise) {
@@ -125,9 +124,9 @@ func All(promises ...*Promise) *Promise {
 					errChan <- err
 				}
 				values[index] = v
-				count.Store(count.Load().(int) + 1)
+				atomic.AddInt32(&count, 1)
 				// 所有promise都成功
-				if count.Load().(int) == len(promises) {
+				if int(count) == len(promises) {
 					valueChan <- values
 				}
 			}(index, promise)
